@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { io } from 'socket.io-client';
 import useAuthStore from '@/store/authStore';
+import { useSocket } from '@/context/SocketContext';
 import api from '@/lib/api';
 import { uploadImage } from '@/lib/uploadImage';
 import CoinDisplay from '@/components/shared/CoinDisplay';
@@ -45,6 +45,7 @@ export default function ProfilePage() {
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const avatarInputRef = useRef(null);
 
+  const { socketRef, version } = useSocket();
   const isOwnProfile = currentUser && (currentUser.id === userId || currentUser._id === userId);
 
   async function loadProfile() {
@@ -81,22 +82,18 @@ export default function ProfilePage() {
 
   // When viewing own profile, listen for rating updates so stats refresh in real-time
   useEffect(() => {
-    if (!currentUser) return;
+    const socket = socketRef?.current;
+    if (!socket || !currentUser) return;
     const myId = currentUser.id || currentUser._id;
-    if (myId !== userId) return; // only own profile updates automatically
-    const socket = io(process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:5000', {
-      transports: ['websocket'],
-    });
-    socket.on('connect', () => socket.emit('join', { userId: myId }));
-    socket.on('profile:updated', ({ avgRating, rankScore, rank }) => {
+    if (myId !== userId) return;
+    const onProfileUpdated = ({ avgRating, rankScore, rank }) => {
       setProfileUser((prev) => prev ? { ...prev, avgRating, rankScore, rank } : prev);
-    });
-    return () => {
-      socket.off('profile:updated');
-      socket.disconnect();
     };
+    socket.on('profile:updated', onProfileUpdated);
+    return () => { socket.off('profile:updated', onProfileUpdated); };
+  // re-subscribe after reconnect
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentUser?.id || currentUser?._id, userId]);
+  }, [version, currentUser?.id || currentUser?._id, userId]);
 
   const handleFollowToggle = async () => {
     try {
@@ -201,9 +198,10 @@ export default function ProfilePage() {
       {/* Profile hero card */}
       <div className="card rounded-3xl overflow-hidden">
         {/* Cover gradient */}
-        <div className="h-32 relative overflow-hidden bg-gradient-to-br from-primary/30 via-primary/10 to-chart-2/20">
+        <div className="h-36 relative overflow-hidden bg-gradient-to-br from-primary/40 via-chart-2/15 to-violet-500/10">
           <div className="absolute inset-0 dot-bg opacity-[0.15]" />
           <div className="absolute inset-0 bg-gradient-to-t from-card/80 to-transparent" />
+          <div className="absolute bottom-0 left-1/4 w-48 h-24 bg-primary/20 blur-3xl" />
         </div>
 
         <div className="px-4 pb-4 sm:px-7 sm:pb-7 -mt-12 relative">
@@ -296,7 +294,9 @@ export default function ProfilePage() {
 
       {/* AI summary */}
       {profileUser.aiSummary && (
-        <div className="card rounded-2xl p-5 border-primary/15 bg-primary/5 relative overflow-hidden">
+        <div className="card rounded-2xl border-primary/15 bg-primary/5 relative overflow-hidden">
+          <div className="h-0.5 bg-gradient-to-r from-primary to-chart-2" />
+          <div className="p-5">
           <div className="absolute top-3 right-4 opacity-[0.06] pointer-events-none">
             <Sparkles className="w-20 h-20 text-primary" />
           </div>
@@ -312,6 +312,7 @@ export default function ProfilePage() {
             )}
           </div>
           <p className="text-sm text-foreground leading-relaxed italic relative z-10">"{profileUser.aiSummary}"</p>
+          </div>
         </div>
       )}
 
@@ -393,7 +394,9 @@ export default function ProfilePage() {
           { dir: 'teach', label: 'Skills I Can Teach', placeholder: 'Add teach skill (e.g. Next.js)...' },
           { dir: 'learn', label: 'Skills I Want to Learn', placeholder: 'Add learn skill (e.g. Spanish)...' },
         ].map(({ dir, label, placeholder }) => (
-          <div key={dir} className="card p-6 rounded-2xl flex flex-col gap-4">
+          <div key={dir} className="card rounded-2xl flex flex-col gap-4 overflow-hidden">
+            <div className={`h-0.5 bg-gradient-to-r ${dir === 'teach' ? 'from-primary via-chart-2 to-transparent' : 'from-chart-2 via-violet-500/50 to-transparent'}`} />
+            <div className="px-6 pb-6 pt-2 flex flex-col gap-4">
             <div className="flex items-center gap-2 border-b border-border pb-3">
               <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${
                 dir === 'teach' ? 'bg-primary/10 text-primary' : 'bg-chart-2/10 text-chart-2'
@@ -442,6 +445,7 @@ export default function ProfilePage() {
                 </div>
               </form>
             )}
+            </div>
           </div>
         ))}
       </div>

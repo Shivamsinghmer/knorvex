@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import api from '@/lib/api';
 import CreatePost from '@/components/social/CreatePost';
 import PostCard from '@/components/social/PostCard';
-import { Loader2, AlertCircle, Newspaper, Tag } from 'lucide-react';
+import { Loader2, AlertCircle, Newspaper, Tag, Sparkles } from 'lucide-react';
 import { fadeUp, fadeIn, fadeLeft, stagger, pageVariants } from '@/lib/motion';
 
 export default function FeedPage() {
@@ -46,9 +46,14 @@ export default function FeedPage() {
       animate="show"
       className="max-w-4xl mx-auto px-4 py-6 sm:px-6 sm:py-10 text-foreground"
     >
-      <motion.div variants={fadeUp} className="flex items-center gap-3 mb-6 sm:mb-8">
-        <Newspaper className="w-8 h-8 text-primary" />
+      <motion.div variants={fadeUp} className="flex items-start gap-3 mb-6 sm:mb-8">
+        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 mt-1">
+          <Newspaper className="w-5 h-5 text-primary" />
+        </div>
         <div>
+          <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full border border-primary/20 bg-primary/5 text-primary mb-2">
+            <Sparkles className="w-3.5 h-3.5" /> Community
+          </span>
           <h1 className="text-3xl font-black text-foreground">Social Feed</h1>
           <p className="text-xs text-muted-foreground mt-1">Share learnings, insights, and showcase skills with peers.</p>
         </div>
@@ -60,14 +65,16 @@ export default function FeedPage() {
 
           {/* Category Tabs */}
           <motion.div
-            variants={fadeIn}
+            variants={stagger}
             initial="hidden"
             animate="show"
             className="flex gap-2 overflow-x-auto pb-2 border-b border-border"
           >
             {categories.map((cat) => (
-              <button
+              <motion.button
                 key={cat}
+                variants={fadeIn}
+                whileTap={{ scale: 0.95 }}
                 onClick={() => setActiveCategory(cat)}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex-shrink-0 ${
                   activeCategory === cat
@@ -76,7 +83,7 @@ export default function FeedPage() {
                 }`}
               >
                 {cat}
-              </button>
+              </motion.button>
             ))}
           </motion.div>
 
@@ -87,7 +94,10 @@ export default function FeedPage() {
             </div>
           ) : posts.length === 0 ? (
             <div className="card p-12 rounded-2xl border-dashed text-center flex flex-col items-center justify-center">
-              <AlertCircle className="w-8 h-8 text-muted-foreground mb-3" />
+              <div className="w-14 h-14 rounded-2xl bg-muted/60 border border-border flex items-center justify-center mb-4">
+                <AlertCircle className="w-7 h-7 text-muted-foreground" />
+              </div>
+              <p className="text-sm font-bold text-foreground mb-1">Nothing here yet</p>
               <p className="text-xs text-muted-foreground">No posts in this category yet. Be the first to share!</p>
             </div>
           ) : (
@@ -119,14 +129,16 @@ export default function FeedPage() {
           )}
         </div>
 
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-6 md:sticky md:top-6 md:self-start">
           <motion.div
             variants={fadeLeft}
             whileInView="show"
             initial="hidden"
             viewport={{ once: true }}
-            className="card p-6 rounded-2xl"
+            className="card rounded-2xl overflow-hidden"
           >
+            <div className="h-0.5 bg-gradient-to-r from-primary via-chart-2 to-transparent" />
+            <div className="p-6">
             <h3 className="font-bold text-sm text-card-foreground mb-4 pb-2 border-b border-border flex items-center gap-1.5">
               <Tag className="w-4 h-4 text-primary" /> Popular tags
             </h3>
@@ -135,11 +147,12 @@ export default function FeedPage() {
                 <button
                   key={tag}
                   onClick={() => setActiveCategory(tag.replace('#', '').replace(/^./, (c) => c.toUpperCase()))}
-                  className="px-2.5 py-1 rounded-lg border border-border bg-muted/30 hover:border-primary/30 hover:bg-primary/5 text-muted-foreground hover:text-primary transition-all font-semibold"
+                  className="px-3 py-1.5 rounded-full border border-border bg-muted/30 hover:border-primary/40 hover:bg-primary/8 text-muted-foreground hover:text-primary transition-all font-semibold"
                 >
                   {tag}
                 </button>
               ))}
+            </div>
             </div>
           </motion.div>
 
@@ -148,10 +161,16 @@ export default function FeedPage() {
             whileInView="show"
             initial="hidden"
             viewport={{ once: true }}
-            className="card p-6 rounded-2xl text-xs leading-relaxed text-muted-foreground bg-primary/5 border-primary/20"
+            className="card rounded-2xl text-xs leading-relaxed text-muted-foreground overflow-hidden"
           >
-            <h4 className="font-bold text-xs text-card-foreground mb-2">📢 Community Guidelines</h4>
-            <p>Knorvex is a supportive barter community. Share helpful tips, ask design questions, list skill exchanges, and be respectful. Bad behavior or spam will lead to account deactivation.</p>
+            <div className="h-0.5 bg-gradient-to-r from-chart-2/60 via-primary/30 to-transparent" />
+            <div className="p-6 bg-primary/5 border-primary/20">
+            <h4 className="font-bold text-sm text-card-foreground mb-3 flex items-center gap-2">
+              <span className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center text-sm">📢</span>
+              Community Guidelines
+            </h4>
+            <p className="leading-relaxed">Knorvex is a supportive barter community. Share helpful tips, ask design questions, list skill exchanges, and be respectful. Bad behavior or spam will lead to account deactivation.</p>
+            </div>
           </motion.div>
         </div>
       </div>

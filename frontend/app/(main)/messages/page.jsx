@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import useAuthStore from '@/store/authStore';
 import api from '@/lib/api';
 import { uploadFile } from '@/lib/uploadImage';
-import { io } from 'socket.io-client';
+import { useSocket } from '@/context/SocketContext';
 import ConversationSidebar from '@/components/messages/ConversationSidebar';
 import MessageThread from '@/components/messages/MessageThread';
 
@@ -37,7 +37,7 @@ export default function MessagesPage() {
   const [isUploading, setIsUploading]         = useState(false);
   const [isAccepting, setIsAccepting]         = useState(false);
 
-  const socketRef      = useRef(null);
+  const { socketRef, version } = useSocket();
   const messagesEndRef  = useRef(null);
   const fileInputRef   = useRef(null);
   const textareaRef    = useRef(null);
@@ -69,39 +69,45 @@ export default function MessagesPage() {
     loadSidebar();
   }, [currentUserId, loadSidebar]);
 
-  /* socket — created once per user session (depends on stable ID, not object ref) */
+  /* socket — listen on shared connection, re-subscribe after reconnect */
   useEffect(() => {
-    if (!currentUserId) return;
-    const socket = io(process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:5000', {
-      transports: ['websocket'],
-    });
-    socketRef.current = socket;
+    const socket = socketRef?.current;
+    if (!socket || !currentUserId) return;
 
-    socket.on('connect', () => socket.emit('join', { userId: currentUserId }));
-
-    socket.on('message:new', ({ message }) => {
+    const onNewMessage = ({ message }) => {
       const peer = selectedUserRef.current;
       if (peer && (peer._id === message.senderId || peer.id === message.senderId)) {
         setMessages((prev) => prev.find((m) => m._id === message._id) ? prev : [...prev, message]);
       } else {
-        loadSidebar();
+        // Message from someone not currently open — bump their conv to top
+        setConversations((prev) => {
+          const idx = prev.findIndex((c) => {
+            const otherId = c.otherUser?._id || c.otherUser?.id;
+            return otherId === message.senderId;
+          });
+          if (idx === -1) { loadSidebar(); return prev; }
+          const conv = { ...prev[idx], lastMessage: message };
+          return [conv, ...prev.slice(0, idx), ...prev.slice(idx + 1)];
+        });
       }
-    });
+    };
 
-    socket.on('message:unsent', ({ messageId }) => {
+    const onUnsent = ({ messageId }) => {
       setMessages((prev) =>
         prev.map((m) => m._id === messageId ? { ...m, unsent: true, content: '', mediaUrl: '', fileName: '' } : m)
       );
-    });
+    };
+
+    socket.on('message:new', onNewMessage);
+    socket.on('message:unsent', onUnsent);
 
     return () => {
-      socket.off('connect');
-      socket.off('message:new');
-      socket.off('message:unsent');
-      socket.disconnect();
+      socket.off('message:new', onNewMessage);
+      socket.off('message:unsent', onUnsent);
     };
+  // re-subscribe after reconnect; selectedUser handled via ref
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentUserId]); // intentionally omit selectedUser — handled via ref above
+  }, [version, currentUserId]);
 
   /* load thread */
   async function loadThread(peer) {
@@ -169,8 +175,18 @@ export default function MessagesPage() {
       }
 
       const { data } = await api.post('/messages', { receiverId: peerId, content, mediaUrl, mediaType, fileName });
-      setMessages((prev) => [...prev, data.data]);
-      loadSidebar();
+      const newMsg = data.data;
+      setMessages((prev) => [...prev, newMsg]);
+      // Update sidebar locally — move this conversation to top with latest message
+      setConversations((prev) => {
+        const idx = prev.findIndex((c) => {
+          const otherId = c.otherUser?._id || c.otherUser?.id;
+          return otherId === peerId;
+        });
+        if (idx === -1) { loadSidebar(); return prev; }
+        const conv = { ...prev[idx], lastMessage: newMsg };
+        return [conv, ...prev.slice(0, idx), ...prev.slice(idx + 1)];
+      });
     } catch (err) {
       console.error('Failed to send:', err);
       setIsUploading(false);

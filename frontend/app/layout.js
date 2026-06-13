@@ -1,5 +1,6 @@
 import './globals.css';
 import Navbar from '@/components/shared/Navbar';
+import Providers from './providers';
 
 export const metadata = {
   title: 'Knorvex — Peer Skill Exchange Platform',
@@ -24,10 +25,12 @@ export default function RootLayout({ children }) {
         <script dangerouslySetInnerHTML={{ __html: `document.documentElement.classList.add('dark');` }} />
       </head>
       <body>
-        <Navbar />
-        <main className="pt-[72px] min-h-screen">
-          {children}
-        </main>
+        <Providers>
+          <Navbar />
+          <main className="pt-[72px] min-h-screen">
+            {children}
+          </main>
+        </Providers>
       </body>
     </html>
   );

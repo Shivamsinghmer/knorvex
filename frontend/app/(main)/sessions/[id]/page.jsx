@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import useAuthStore from '@/store/authStore';
 import api from '@/lib/api';
-import { io } from 'socket.io-client';
+import { useSocket } from '@/context/SocketContext';
 import VideoRoom from '@/components/session/VideoRoom';
 import SessionChat from '@/components/session/SessionChat';
 import AIPrepCard from '@/components/session/AIPrepCard';
@@ -17,6 +17,7 @@ export default function SessionRoomPage() {
   const sessionId = params.id;
 
   const { user: currentUser } = useAuthStore();
+  const { socketRef, version } = useSocket();
   const [session, setSession] = useState(null);
   const [streamToken, setStreamToken] = useState('');
   const [chatToken, setChatToken] = useState('');
@@ -49,21 +50,15 @@ export default function SessionRoomPage() {
 
   // Listen for session:rate_required so the peer (who didn't click End) also sees the rating modal
   useEffect(() => {
-    if (!currentUser) return;
-    const userId = currentUser.id || currentUser._id;
-    const socket = io(process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:5000', {
-      transports: ['websocket'],
-    });
-    socket.on('connect', () => socket.emit('join', { userId }));
-    socket.on('session:rate_required', ({ sessionId: sid }) => {
+    const socket = socketRef?.current;
+    if (!socket || !currentUser) return;
+    const onRateRequired = ({ sessionId: sid }) => {
       if (sid === sessionId) setShowRating(true);
-    });
-    return () => {
-      socket.off('session:rate_required');
-      socket.disconnect();
     };
+    socket.on('session:rate_required', onRateRequired);
+    return () => { socket.off('session:rate_required', onRateRequired); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentUser?.id || currentUser?._id, sessionId]);
+  }, [version, currentUser?.id || currentUser?._id, sessionId]);
 
   const handleEndSession = async () => {
     if (!confirm('Are you sure you want to end this session call? Both participants will be directed to submit ratings.')) return;

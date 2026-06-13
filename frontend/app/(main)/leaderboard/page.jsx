@@ -64,12 +64,15 @@ export default function LeaderboardPage() {
   const podiumPositions = { 0: 'order-1', 1: 'order-2 -mb-1', 2: 'order-3' };
 
   return (
-    <motion.div variants={pageVariants} initial="hidden" animate="show" className="max-w-5xl mx-auto px-4 py-6 sm:px-6 sm:py-10 text-foreground">
+    <motion.div variants={pageVariants} initial="hidden" animate="show" className="max-w-5xl mx-auto px-4 py-6 sm:px-6 sm:py-10 text-foreground relative">
+      <div className="absolute top-0 left-0 right-0 h-48 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none -z-10" />
       {/* Header */}
       <motion.div variants={fadeUp} className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-10">
         <div>
+          <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full border border-amber-400/20 bg-amber-400/5 text-amber-400 mb-2">
+            <Trophy className="w-3.5 h-3.5" /> Rankings
+          </span>
           <h1 className="text-3xl font-black flex items-center gap-2.5 text-foreground">
-            <Trophy className="w-8 h-8 text-amber-400" />
             Skill Leaderboard
           </h1>
           <p className="text-xs text-muted-foreground mt-1">
@@ -97,7 +100,10 @@ export default function LeaderboardPage() {
         </div>
       ) : leaders.length === 0 ? (
         <div className="card p-16 rounded-3xl border-dashed text-center flex flex-col items-center justify-center min-h-[350px]">
-          <Award className="w-10 h-10 text-muted-foreground mb-3" />
+          <div className="w-16 h-16 rounded-2xl bg-muted/60 border border-border flex items-center justify-center mb-4">
+            <Award className="w-8 h-8 text-muted-foreground" />
+          </div>
+          <p className="text-sm font-bold text-foreground mb-1">No rankings yet</p>
           <p className="text-xs text-muted-foreground">Leaderboard is empty. Host a session to rank first!</p>
         </div>
       ) : (
@@ -113,7 +119,8 @@ export default function LeaderboardPage() {
                   const { userObj, name, avatar, rank, score, avgRating } = getUserData(leaders[i]);
                   const isFirst = i === 0;
                   return (
-                    <motion.div key={i} variants={scaleIn} whileHover={cardHover} className={`flex flex-col items-center gap-2 ${isFirst ? 'order-2' : i === 1 ? 'order-1' : 'order-3'}`}>
+                    <motion.div key={i} variants={scaleIn} whileHover={cardHover} className={`flex flex-col items-center gap-2 relative ${isFirst ? 'order-2' : i === 1 ? 'order-1' : 'order-3'}`}>
+                      <div className="absolute inset-0 bg-gradient-to-b from-primary/3 to-transparent pointer-events-none rounded-2xl" />
                       <div className={`relative ${isFirst ? 'scale-110' : ''}`}>
                         <Link href={`/profile/${userObj?._id}`}>
                           <img src={avatar} alt={name} loading="lazy"

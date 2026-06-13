@@ -38,13 +38,6 @@ export default function LoginPage() {
         <div className="absolute inset-0 opacity-5 dot-bg" />
 
         <motion.div className="relative z-10" variants={fadeLeft} initial="hidden" animate="show">
-          <div className="flex items-center gap-2 mb-8">
-            <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center">
-              <Zap size={18} color="white" fill="white" />
-            </div>
-            <span className="font-bold text-xl text-white tracking-tight">Knorvex</span>
-          </div>
-
           <h2 className="text-3xl font-black text-white leading-tight mb-2">
             The skill economy<br />is barter-powered.
           </h2>

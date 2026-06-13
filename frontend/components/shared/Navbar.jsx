@@ -3,9 +3,9 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { io } from 'socket.io-client';
 import useAuthStore from '@/store/authStore';
 import useCoinStore from '@/store/coinStore';
+import { useSocket } from '@/context/SocketContext';
 import CoinDisplay from './CoinDisplay';
 import RankBadge from './RankBadge';
 import Avatar from './Avatar';
@@ -28,6 +28,7 @@ export default function Navbar() {
   const router = useRouter();
   const { user, logout, fetchMe, updateUser } = useAuthStore();
   const { balance } = useCoinStore();
+  const { socketRef, version } = useSocket();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -49,27 +50,21 @@ export default function Navbar() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Listen for coin credit events to immediately update navbar balance (e.g. host receives coins at booking)
+  // Listen for coin events on the shared socket
   useEffect(() => {
-    if (!user) return;
-    const userId = user.id || user._id;
-    const socket = io(process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:5000', {
-      transports: ['websocket'],
-    });
-    socket.on('connect', () => socket.emit('join', { userId }));
-    socket.on('coins:credited', ({ newBalance }) => {
-      updateUser({ skillCoinBalance: newBalance });
-    });
-    socket.on('coins:debited', ({ newBalance }) => {
-      updateUser({ skillCoinBalance: newBalance });
-    });
+    const socket = socketRef?.current;
+    if (!socket || !user) return;
+    const onCredited = ({ newBalance }) => updateUser({ skillCoinBalance: newBalance });
+    const onDebited  = ({ newBalance }) => updateUser({ skillCoinBalance: newBalance });
+    socket.on('coins:credited', onCredited);
+    socket.on('coins:debited',  onDebited);
     return () => {
-      socket.off('coins:credited');
-      socket.off('coins:debited');
-      socket.disconnect();
+      socket.off('coins:credited', onCredited);
+      socket.off('coins:debited',  onDebited);
     };
+  // re-subscribe when shared socket reconnects
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id || user?._id]);
+  }, [version, user?.id || user?._id]);
 
   const handleLogout = async () => {
     await logout();

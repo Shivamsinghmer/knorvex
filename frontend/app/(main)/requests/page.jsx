@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { fadeUp, fadeIn, scaleIn, stagger, cardHover, tap, pageVariants } from '@/lib/motion';
 import useAuthStore from '@/store/authStore';
 import api from '@/lib/api';
 import CoinDisplay from '@/components/shared/CoinDisplay';
@@ -81,13 +83,16 @@ export default function RequestsPage() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-6 sm:px-6 sm:py-10 text-foreground relative">
+    <motion.div variants={pageVariants} initial="hidden" animate="show" className="max-w-6xl mx-auto px-4 py-6 sm:px-6 sm:py-10 text-foreground relative">
       <div className="absolute top-0 right-1/4 w-[300px] h-[300px] bg-primary/5 blur-[120px] pointer-events-none" />
+      <div className="absolute top-0 left-0 right-0 h-48 bg-gradient-to-b from-primary/4 to-transparent pointer-events-none -z-10" />
 
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+      <motion.div variants={fadeUp} className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
+          <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full border border-primary/20 bg-primary/5 text-primary mb-2">
+            <HelpCircle className="w-3.5 h-3.5" /> Peer Learning
+          </span>
           <h1 className="text-3xl font-black flex items-center gap-2 text-foreground">
-            <HelpCircle className="w-8 h-8 text-primary" />
             Skill Requests
           </h1>
           <p className="text-xs text-muted-foreground mt-1 font-medium">
@@ -95,17 +100,20 @@ export default function RequestsPage() {
           </p>
         </div>
 
-        <button
+        <motion.button
+          whileTap={tap}
           onClick={() => setShowForm(!showForm)}
           className="btn-primary px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-1.5"
         >
           <Plus className="w-4 h-4" />
           <span>{showForm ? 'View Board' : 'Post Skill Request'}</span>
-        </button>
-      </div>
+        </motion.button>
+      </motion.div>
 
       {showForm ? (
-        <div className="card max-w-2xl mx-auto p-5 sm:p-8 rounded-3xl shadow-2xl relative z-10 mb-8 animate-fade-in">
+        <motion.div variants={fadeUp} className="card max-w-2xl mx-auto rounded-3xl shadow-2xl relative z-10 mb-8 overflow-hidden">
+          <div className="h-0.5 bg-gradient-to-r from-primary via-chart-2 to-transparent" />
+          <div className="p-5 sm:p-8">
           <h2 className="text-xl font-black text-card-foreground mb-1 flex items-center gap-1.5">
             <Sparkles className="w-5 h-5 text-primary" /> Ask the Community
           </h2>
@@ -181,16 +189,18 @@ export default function RequestsPage() {
               />
             </div>
 
-            <button
+            <motion.button
+              whileTap={tap}
               type="submit"
               disabled={isSubmitting}
               className="btn-primary w-full py-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 mt-2"
             >
               {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
               Publish Community Request
-            </button>
+            </motion.button>
           </form>
-        </div>
+          </div>
+        </motion.div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 flex flex-col gap-6">
@@ -206,18 +216,25 @@ export default function RequestsPage() {
               </div>
             ) : requests.length === 0 ? (
               <div className="card p-12 rounded-2xl border-dashed text-center flex flex-col items-center justify-center min-h-[300px]">
-                <AlertCircle className="w-8 h-8 text-muted-foreground mb-3" />
-                <p className="text-xs text-muted-foreground">Request board is currently clear.</p>
+                <div className="w-14 h-14 rounded-2xl bg-muted/60 border border-border flex items-center justify-center mb-4">
+                  <AlertCircle className="w-7 h-7 text-muted-foreground" />
+                </div>
+                <p className="text-sm font-bold text-foreground mb-1">Board is clear</p>
+                <p className="text-xs text-muted-foreground">No open requests right now. Be the first to post one!</p>
               </div>
             ) : (
-              <div className="flex flex-col gap-4">
+              <motion.div variants={stagger} initial="hidden" animate="show" className="flex flex-col gap-4">
                 {requests.map((req) => {
                   const reqUser = req.userId || {};
                   return (
-                    <div
+                    <motion.div
                       key={req._id}
-                      className="card hover-glow p-6 rounded-2xl flex flex-col gap-3"
+                      variants={fadeUp}
+                      whileHover={cardHover}
+                      className="card hover-glow rounded-2xl flex flex-col overflow-hidden"
                     >
+                      <div className="h-0.5 bg-gradient-to-r from-primary via-chart-2 to-transparent" />
+                      <div className="p-6 flex flex-col gap-3">
                       <div className="flex justify-between items-start">
                         <div className="flex items-center gap-3">
                           <img
@@ -231,14 +248,14 @@ export default function RequestsPage() {
                           </div>
                         </div>
 
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${getUrgencyBadge(req.urgency)}`}>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${getUrgencyBadge(req.urgency)}`}>
                           {req.urgency}
                         </span>
                       </div>
 
                       <div className="flex flex-col">
                         <span className="text-sm font-bold text-card-foreground leading-relaxed">{req.description}</span>
-                        <span className="text-[10px] text-primary mt-1.5 font-mono bg-primary/5 border border-primary/10 px-2.5 py-0.5 rounded w-max">
+                        <span className="text-[10px] text-primary mt-1.5 font-mono bg-primary/5 border border-primary/10 px-2.5 py-0.5 rounded-full w-max">
                           Skill: {req.skillName}
                         </span>
                       </div>
@@ -247,35 +264,46 @@ export default function RequestsPage() {
                         <CoinDisplay amount={req.coinOffer} size="xs" showLabel />
                         {reqUser._id !== user?.id && reqUser._id !== user?._id && (
                           <Link href={`/sessions/book?user=${reqUser._id || reqUser.id}&skill=${encodeURIComponent(req.skillName)}`}>
-                            <button className="px-4 py-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-[11px] transition-colors">
+                            <motion.button whileTap={tap} className="px-4 py-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-[11px] transition-colors">
                               Teach Skill
-                            </button>
+                            </motion.button>
                           </Link>
                         )}
                       </div>
-                    </div>
+                      </div>
+                    </motion.div>
                   );
                 })}
-              </div>
+              </motion.div>
             )}
           </div>
 
-          <div className="flex flex-col gap-6">
-            <div className="card p-6 rounded-2xl text-xs leading-relaxed text-muted-foreground">
-              <h3 className="font-bold text-sm text-card-foreground mb-2 flex items-center gap-1.5">
-                <span>🎒</span> Community Notes
+          <div className="flex flex-col gap-6 md:sticky md:top-6 md:self-start">
+            <div className="card rounded-2xl text-xs leading-relaxed text-muted-foreground overflow-hidden">
+              <div className="h-0.5 bg-gradient-to-r from-primary/60 via-chart-2/40 to-transparent" />
+              <div className="p-6">
+              <h3 className="font-bold text-sm text-card-foreground mb-3 flex items-center gap-2">
+                <span className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center text-sm">🎒</span>
+                Community Notes
               </h3>
-              <p className="text-muted-foreground">
+              <p className="text-muted-foreground leading-relaxed">
                 AI ranks open skill requests based on your profile's listed <strong className="text-foreground">Teach Skills</strong>. If a peer needs help with something you listed, it will float to the top of your request feed!
               </p>
-              <ul className="flex flex-col gap-1.5 list-disc list-inside mt-3 text-muted-foreground">
-                <li>Teach requests to earn double coins.</li>
-                <li>Ensure you have sufficient balance before requesting help.</li>
+              <ul className="flex flex-col gap-2 mt-4 text-muted-foreground">
+                <li className="flex items-start gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary/60 mt-1.5 flex-shrink-0" />
+                  Teach requests to earn double coins.
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary/60 mt-1.5 flex-shrink-0" />
+                  Ensure you have sufficient balance before requesting help.
+                </li>
               </ul>
+              </div>
             </div>
           </div>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }

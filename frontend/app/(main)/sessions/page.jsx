@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { io } from 'socket.io-client';
+import { useState, useEffect, useCallback } from 'react';
 import useAuthStore from '@/store/authStore';
 import useSessionStore from '@/store/sessionStore';
 import api from '@/lib/api';
+import { useSocket } from '@/context/SocketContext';
 import RatingModal from '@/components/session/RatingModal';
 import { Calendar, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
@@ -16,6 +16,7 @@ import SessionCard from '@/components/sessions/SessionCard';
 export default function SessionsPage() {
   const { user } = useAuthStore();
   const { sessions, isLoading, fetchSessions, updateSession } = useSessionStore();
+  const { socketRef, version } = useSocket();
   const [activeTab, setActiveTab] = useState('upcoming');
   const [ratingSessionId, setRatingSessionId] = useState(null);
   const [summarySessionId, setSummarySessionId] = useState(null);
@@ -24,61 +25,51 @@ export default function SessionsPage() {
 
   useEffect(() => { fetchSessions(); }, []);
 
-  // Auto-open rating modal + switch to Past Exchange when a session ends
+  // Real-time session events via shared socket
   useEffect(() => {
-    if (!user) return;
-    const userId = user.id || user._id;
-    const socket = io(process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:5000', {
-      transports: ['websocket'],
-    });
-    socket.on('connect', () => socket.emit('join', { userId }));
-    socket.on('session:rate_required', ({ sessionId }) => {
-      setRatingSessionId(sessionId);
-      setActiveTab('past');
-      fetchSessions();
-    });
-    socket.on('session:completed', () => {
-      fetchSessions();
-    });
-    socket.on('session:booked', () => {
-      fetchSessions();
-      setActiveTab('pending');
-    });
-    socket.on('session:confirmed', () => {
-      fetchSessions();
-      setActiveTab('upcoming');
-    });
-    socket.on('session:cancelled', () => {
-      fetchSessions();
-    });
-    return () => {
-      socket.off('session:rate_required');
-      socket.off('session:completed');
-      socket.off('session:booked');
-      socket.off('session:confirmed');
-      socket.off('session:cancelled');
-      socket.disconnect();
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id || user?._id]);
+    const socket = socketRef?.current;
+    if (!socket) return;
 
-  const handleConfirm = async (sessionId) => {
+    const onRateRequired = ({ sessionId }) => { setRatingSessionId(sessionId); setActiveTab('past'); fetchSessions(); };
+    const onCompleted    = () => fetchSessions();
+    const onBooked       = () => { fetchSessions(); setActiveTab('pending'); };
+    const onConfirmed    = () => { fetchSessions(); setActiveTab('upcoming'); };
+    const onCancelled    = () => fetchSessions();
+
+    socket.on('session:rate_required', onRateRequired);
+    socket.on('session:completed',     onCompleted);
+    socket.on('session:booked',        onBooked);
+    socket.on('session:confirmed',     onConfirmed);
+    socket.on('session:cancelled',     onCancelled);
+
+    return () => {
+      socket.off('session:rate_required', onRateRequired);
+      socket.off('session:completed',     onCompleted);
+      socket.off('session:booked',        onBooked);
+      socket.off('session:confirmed',     onConfirmed);
+      socket.off('session:cancelled',     onCancelled);
+    };
+  // re-subscribe after reconnect
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [version]);
+
+  const handleConfirm = useCallback(async (sessionId) => {
     try {
       await api.put(`/sessions/${sessionId}/confirm`);
       updateSession(sessionId, { status: 'confirmed' });
-      fetchSessions();
+      // fetchSessions is intentionally omitted — updateSession handles local state
+      // the socket event session:confirmed will trigger a background refresh
     } catch (err) { console.error(err); }
-  };
+  }, [updateSession]);
 
-  const handleCancel = async (sessionId) => {
+  const handleCancel = useCallback(async (sessionId) => {
     if (!confirm('Are you sure you want to cancel this session?')) return;
     try {
       await api.post(`/sessions/${sessionId}/cancel`, { reason: 'User requested cancellation.' });
       updateSession(sessionId, { status: 'cancelled' });
-      setActiveTab('past'); // cancelled sessions live in Past Exchange
-      fetchSessions();
+      setActiveTab('past');
     } catch (err) { console.error(err); }
-  };
+  }, [updateSession]);
 
   const handleOpenSummary = async (sessionId) => {
     setSummarySessionId(sessionId); setSummaryText(''); setIsLoadingSummary(true);

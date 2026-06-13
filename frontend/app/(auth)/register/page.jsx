@@ -57,13 +57,6 @@ export default function RegisterPage() {
       <div className="hidden lg:flex lg:w-[36%] auth-brand-panel flex-col justify-between p-8 relative overflow-hidden">
         <div className="absolute inset-0 opacity-5 dot-bg" />
         <motion.div className="relative z-10" variants={fadeLeft} initial="hidden" animate="show">
-          <div className="flex items-center gap-2 mb-6">
-            <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center">
-              <Zap size={18} color="white" fill="white" />
-            </div>
-            <span className="font-bold text-xl text-white tracking-tight">Knorvex</span>
-          </div>
-
           <h2 className="text-2xl font-black text-white leading-tight mb-2">
             Your skills have<br />real exchange value.
           </h2>
@@ -82,6 +75,18 @@ export default function RegisterPage() {
             ))}
           </div>
         </motion.div>
+
+        {/* Illustration */}
+        <div className="relative z-10 flex-1 flex items-center justify-center py-3 min-h-0">
+          <img
+            src="https://topmate.io/cdn-cgi/image/width=640,quality=90/images/sign-in/sign-in-back.svg"
+            alt="Skill exchange illustration"
+            className="w-full max-w-[220px] object-contain drop-shadow-2xl"
+            style={{ maxHeight: '180px' }}
+            loading="lazy"
+          />
+        </div>
+
         <p className="text-white/40 text-xs relative z-10">© 2026 Knorvex · DevQBX Arena</p>
       </div>
 
