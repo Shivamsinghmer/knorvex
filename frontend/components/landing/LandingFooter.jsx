@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { Zap } from 'lucide-react';
 
 export default function LandingFooter() {
   return (
@@ -7,11 +6,8 @@ export default function LandingFooter() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         <div className="flex flex-col sm:flex-row justify-between items-start gap-10">
           <div>
-            <div className="flex items-center gap-2.5 mb-3">
-              <div className="w-7 h-7 rounded-xl bg-primary flex items-center justify-center">
-                <Zap size={12} className="text-primary-foreground fill-primary-foreground" />
-              </div>
-              <span className="font-black text-foreground tracking-tight text-lg">Knorvex</span>
+            <div className="mb-3">
+              <img src="/logo-dark.png" alt="Knorvex" className="h-10 w-auto object-contain" />
             </div>
             <p className="text-xs text-muted-foreground max-w-xs leading-relaxed">
               Peer-to-peer skill exchange for Indian students and professionals. Barter knowledge, earn coins, grow together.
