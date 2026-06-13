@@ -16,14 +16,31 @@ export default function RatingModal({ sessionId, onSubmitted, onClose }) {
   const [error, setError] = useState('');
   const [sessionStatus, setSessionStatus] = useState(null);
   const [isCheckingStatus, setIsCheckingStatus] = useState(true);
+  const [isEnding, setIsEnding] = useState(false);
 
-  useEffect(() => {
-    if (!sessionId) return;
+  const refreshStatus = () => {
+    setIsCheckingStatus(true);
     api.get(`/sessions/${sessionId}`)
       .then(({ data }) => setSessionStatus(data.data?.status))
       .catch(() => setSessionStatus('unknown'))
       .finally(() => setIsCheckingStatus(false));
+  };
+
+  useEffect(() => {
+    if (!sessionId) return;
+    refreshStatus();
   }, [sessionId]);
+
+  const handleEndSession = async () => {
+    setIsEnding(true);
+    try {
+      await api.post(`/sessions/${sessionId}/end`);
+      refreshStatus();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to end session.');
+      setIsEnding(false);
+    }
+  };
 
   const canRate = sessionStatus === 'pending_rating' || sessionStatus === 'completed';
 
@@ -101,16 +118,35 @@ export default function RatingModal({ sessionId, onSubmitted, onClose }) {
               <p className="text-sm font-bold text-foreground mb-1">Session not ready for rating</p>
               <p className="text-xs text-muted-foreground leading-relaxed">
                 This session is currently <span className="font-bold text-foreground">{sessionStatus}</span>.
-                Ratings can only be submitted after the session has been started and ended via the video room.
+                {sessionStatus === 'active'
+                  ? ' End the session first to unlock ratings.'
+                  : ' Ratings can only be submitted after the session has been started and ended via the video room.'}
               </p>
             </div>
-            <div className="w-full p-3 rounded-xl bg-muted/40 border border-border text-xs text-muted-foreground text-left leading-relaxed">
-              Required flow: <span className="text-foreground font-semibold">Confirm → Enter Call → End Session → Rate</span>
-            </div>
-            {onClose && (
-              <button onClick={onClose} className="btn-primary w-full py-2.5 rounded-xl text-sm font-bold mt-1">
-                Got it
+
+            {sessionStatus === 'active' ? (
+              <button
+                onClick={handleEndSession}
+                disabled={isEnding}
+                className="btn-primary w-full py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2"
+              >
+                {isEnding ? <><Loader2 className="w-4 h-4 animate-spin" /> Ending session…</> : 'End Session & Rate'}
               </button>
+            ) : (
+              <>
+                <div className="w-full p-3 rounded-xl bg-muted/40 border border-border text-xs text-muted-foreground text-left leading-relaxed">
+                  Required flow: <span className="text-foreground font-semibold">Confirm → Enter Call → End Session → Rate</span>
+                </div>
+                {onClose && (
+                  <button onClick={onClose} className="btn-primary w-full py-2.5 rounded-xl text-sm font-bold mt-1">
+                    Got it
+                  </button>
+                )}
+              </>
+            )}
+
+            {error && (
+              <div className="w-full p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-xs text-destructive">{error}</div>
             )}
           </div>
         ) : (
