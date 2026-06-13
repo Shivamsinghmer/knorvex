@@ -60,8 +60,12 @@ export default function Navbar() {
     socket.on('coins:credited', ({ newBalance }) => {
       updateUser({ skillCoinBalance: newBalance });
     });
+    socket.on('coins:debited', ({ newBalance }) => {
+      updateUser({ skillCoinBalance: newBalance });
+    });
     return () => {
       socket.off('coins:credited');
+      socket.off('coins:debited');
       socket.disconnect();
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps

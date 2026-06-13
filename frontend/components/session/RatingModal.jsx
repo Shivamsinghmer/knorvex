@@ -3,9 +3,9 @@
 import { useState } from 'react';
 import api from '@/lib/api';
 import useAuthStore from '@/store/authStore';
-import { Star, Loader2, Sparkles } from 'lucide-react';
+import { Star, Loader2, Sparkles, X } from 'lucide-react';
 
-export default function RatingModal({ sessionId, onSubmitted }) {
+export default function RatingModal({ sessionId, onSubmitted, onClose }) {
   const { fetchMe } = useAuthStore();
   const [clarity, setClarity] = useState(5);
   const [punctuality, setPunctuality] = useState(5);
@@ -56,6 +56,16 @@ export default function RatingModal({ sessionId, onSubmitted }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/20 backdrop-blur-sm animate-fade-in">
       <div className="card max-w-lg w-full p-8 rounded-3xl shadow-2xl relative overflow-hidden">
         <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-primary via-chart-2 to-chart-1" />
+
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            className="absolute top-4 right-4 p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors z-10"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
 
         <div className="text-center mb-6">
           <span className="inline-flex items-center gap-1.5 text-xs font-bold font-mono px-3 py-1 rounded-full border border-primary/20 bg-primary/5 text-primary mb-2">

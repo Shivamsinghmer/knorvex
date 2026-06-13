@@ -65,10 +65,16 @@ export const bookSession = async (req, res, next) => {
 
     // Transfer coins: deduct from learner, credit to host, notify both
     if (!isPaidSession) {
-      const [, newHostBalance] = await Promise.all([
+      const [newLearnerBalance, newHostBalance] = await Promise.all([
         debitCoins(learnerId, BOOKING_COST, `Booked session with ${host.name}: ${skillTag}`, session._id),
         creditCoins(hostId, BOOKING_COST, `Session booked by ${req.user.name}: ${skillTag}`, session._id),
       ]);
+      // Notify learner of deducted coins
+      sendSocketNotification(learnerId.toString(), 'coins:debited', {
+        amount: BOOKING_COST,
+        newBalance: newLearnerBalance,
+        reason: `Booked session with ${host.name}: ${skillTag}`,
+      });
       // Notify host of new coin balance
       sendSocketNotification(hostId.toString(), 'coins:credited', {
         amount: BOOKING_COST,

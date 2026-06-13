@@ -150,7 +150,7 @@ export default function SessionRoomPage() {
       </div>
 
       {showRating && (
-        <RatingModal sessionId={sessionId} onSubmitted={() => { setShowRating(false); router.push('/sessions'); }} />
+        <RatingModal sessionId={sessionId} onSubmitted={() => { setShowRating(false); router.push('/sessions'); }} onClose={() => setShowRating(false)} />
       )}
     </div>
   );

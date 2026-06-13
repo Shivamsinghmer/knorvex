@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import useAuthStore from '@/store/authStore';
 import useSessionStore from '@/store/sessionStore';
+import useCoinStore from '@/store/coinStore';
 import api from '@/lib/api';
 import CoinDisplay from '@/components/shared/CoinDisplay';
 import { Calendar, User, BookOpen, Clock, Loader2, Sparkles, AlertTriangle } from 'lucide-react';
@@ -16,6 +17,7 @@ export default function BookSessionPage() {
 
   const { user: currentUser } = useAuthStore();
   const { bookSession } = useSessionStore();
+  const fetchBalance = useCoinStore((s) => s.fetchBalance);
 
   const [peers, setPeers] = useState([]);
   const [selectedPeerId, setSelectedPeerId] = useState('');
@@ -110,6 +112,7 @@ export default function BookSessionPage() {
         scheduledAt: scheduledAt.toISOString(),
         durationMinutes: parseInt(duration),
       });
+      await fetchBalance();
       router.push('/sessions');
     } catch (err) {
       console.error('Failed to book session:', err);

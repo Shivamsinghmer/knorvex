@@ -183,7 +183,11 @@ export default function SessionsPage() {
       )}
 
       {ratingSessionId && (
-        <RatingModal sessionId={ratingSessionId} onSubmitted={() => { setRatingSessionId(null); fetchSessions(); }} />
+        <RatingModal
+          sessionId={ratingSessionId}
+          onSubmitted={() => { setRatingSessionId(null); fetchSessions(); }}
+          onClose={() => setRatingSessionId(null)}
+        />
       )}
 
       <SummaryModal
