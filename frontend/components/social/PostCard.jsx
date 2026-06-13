@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import Link from 'next/link';
 import api from '@/lib/api';
 import useAuthStore from '@/store/authStore';
@@ -9,7 +9,7 @@ import Avatar from '@/components/shared/Avatar';
 import { Heart, MessageSquare, Trash2, Send, ChevronDown, ChevronUp } from 'lucide-react';
 import { timeAgo } from '@/lib/utils';
 
-export default function PostCard({ post, onDelete }) {
+function PostCard({ post, onDelete }) {
   const { user: currentUser } = useAuthStore();
   const [likes, setLikes] = useState(post.likesCount || 0);
   const [hasLiked, setHasLiked] = useState(post.hasLiked || false);
@@ -200,3 +200,5 @@ export default function PostCard({ post, onDelete }) {
     </div>
   );
 }
+
+export default memo(PostCard);

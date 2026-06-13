@@ -195,8 +195,8 @@ export default function RegisterPage() {
                     </div>
                   )}
                 </div>
-              </div>
-            </div>
+              </motion.div>
+            </motion.div>
 
             <div className="pt-6 border-t border-border">
               <button type="submit" disabled={isLoading} className="btn-primary w-full py-3.5 rounded-xl font-bold text-sm group">
@@ -212,7 +212,7 @@ export default function RegisterPage() {
               </div>
             </div>
           </form>
-        </div>
+        </motion.div>
       </div>
     </div>
   );

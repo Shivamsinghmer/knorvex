@@ -1,11 +1,12 @@
 'use client';
 
+import { memo } from 'react';
 import Link from 'next/link';
 import RankBadge from '@/components/shared/RankBadge';
 import SkillTag from '@/components/shared/SkillTag';
 import { Sparkles, Calendar, MessageCircle, ArrowUpRight } from 'lucide-react';
 
-export default function MatchCard({ match }) {
+function MatchCard({ match }) {
   const { user, skills = [], compatibilityScore = 0, score = 0, reason = '' } = match;
   const displayScore = compatibilityScore || score;
   const userId = user?._id || user?.id || 'unknown';
@@ -153,3 +154,5 @@ export default function MatchCard({ match }) {
     </div>
   );
 }
+
+export default memo(MatchCard);
