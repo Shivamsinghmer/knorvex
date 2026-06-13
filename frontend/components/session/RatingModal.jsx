@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import api from '@/lib/api';
 import useAuthStore from '@/store/authStore';
-import { Star, Loader2, Sparkles, X } from 'lucide-react';
+import { Star, Loader2, Sparkles, X, AlertTriangle } from 'lucide-react';
 
 export default function RatingModal({ sessionId, onSubmitted, onClose }) {
   const { fetchMe } = useAuthStore();
@@ -14,6 +14,18 @@ export default function RatingModal({ sessionId, onSubmitted, onClose }) {
   const [comment, setComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [sessionStatus, setSessionStatus] = useState(null);
+  const [isCheckingStatus, setIsCheckingStatus] = useState(true);
+
+  useEffect(() => {
+    if (!sessionId) return;
+    api.get(`/sessions/${sessionId}`)
+      .then(({ data }) => setSessionStatus(data.data?.status))
+      .catch(() => setSessionStatus('unknown'))
+      .finally(() => setIsCheckingStatus(false));
+  }, [sessionId]);
+
+  const canRate = sessionStatus === 'pending_rating' || sessionStatus === 'completed';
 
   const axes = [
     { label: 'Explanation & Clarity', val: clarity, set: setClarity, desc: 'How clear was the explanation?' },
@@ -75,42 +87,72 @@ export default function RatingModal({ sessionId, onSubmitted, onClose }) {
           <p className="text-xs text-muted-foreground mt-1">Your review updates the peer's rank, rating, and profile automatically.</p>
         </div>
 
-        {error && (
-          <div className="mb-4 p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-xs text-destructive">{error}</div>
-        )}
+        {isCheckingStatus ? (
+          <div className="flex flex-col items-center justify-center py-12 gap-3">
+            <Loader2 className="w-6 h-6 text-primary animate-spin" />
+            <p className="text-xs text-muted-foreground">Checking session status…</p>
+          </div>
+        ) : !canRate ? (
+          <div className="flex flex-col items-center text-center gap-4 py-8">
+            <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+              <AlertTriangle className="w-6 h-6 text-amber-500" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-foreground mb-1">Session not ready for rating</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                This session is currently <span className="font-bold text-foreground">{sessionStatus}</span>.
+                Ratings can only be submitted after the session has been started and ended via the video room.
+              </p>
+            </div>
+            <div className="w-full p-3 rounded-xl bg-muted/40 border border-border text-xs text-muted-foreground text-left leading-relaxed">
+              Required flow: <span className="text-foreground font-semibold">Confirm → Enter Call → End Session → Rate</span>
+            </div>
+            {onClose && (
+              <button onClick={onClose} className="btn-primary w-full py-2.5 rounded-xl text-sm font-bold mt-1">
+                Got it
+              </button>
+            )}
+          </div>
+        ) : (
+          <>
+            {error && (
+              <div className="mb-4 p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-xs text-destructive">{error}</div>
+            )}
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-          <div className="flex flex-col gap-4">
-            {axes.map((axis, idx) => (
-              <div key={idx} className="flex justify-between items-center bg-muted/30 border border-border p-3 rounded-xl">
-                <div>
-                  <h4 className="text-xs font-bold text-card-foreground">{axis.label}</h4>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">{axis.desc}</p>
-                </div>
-                {renderStars(axis.val, axis.set)}
+            <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+              <div className="flex flex-col gap-4">
+                {axes.map((axis, idx) => (
+                  <div key={idx} className="flex justify-between items-center bg-muted/30 border border-border p-3 rounded-xl">
+                    <div>
+                      <h4 className="text-xs font-bold text-card-foreground">{axis.label}</h4>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">{axis.desc}</p>
+                    </div>
+                    {renderStars(axis.val, axis.set)}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
 
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold text-muted-foreground">Written Feedback (Optional)</label>
-            <textarea
-              placeholder="What went well? Any suggestions for improvement?"
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              rows={3}
-              className="w-full bg-background border border-input rounded-xl px-4 py-3 text-xs text-foreground placeholder-muted-foreground focus:outline-none focus:border-primary transition-all resize-none"
-            />
-          </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-muted-foreground">Written Feedback (Optional)</label>
+                <textarea
+                  placeholder="What went well? Any suggestions for improvement?"
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  rows={3}
+                  className="w-full bg-background border border-input rounded-xl px-4 py-3 text-xs text-foreground placeholder-muted-foreground focus:outline-none focus:border-primary transition-all resize-none"
+                />
+              </div>
 
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="btn-primary py-3 rounded-xl font-bold text-sm mt-2 flex items-center justify-center gap-2"
-          >
-            {isSubmitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Submitting review...</> : 'Submit Rating'}
-          </button>
-        </form>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="btn-primary py-3 rounded-xl font-bold text-sm mt-2 flex items-center justify-center gap-2"
+              >
+                {isSubmitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Submitting review…</> : 'Submit Rating'}
+              </button>
+            </form>
+          </>
+        )}
       </div>
     </div>
   );
